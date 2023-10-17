@@ -25,7 +25,10 @@ namespace ignacionr
         {
             return values_;
         }
-
+        nlohmann::json const &values() const
+        {
+            return values_;
+        }
     private:
         struct rectangle
         {
