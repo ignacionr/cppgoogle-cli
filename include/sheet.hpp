@@ -1,3 +1,5 @@
+#pragma once
+#include <functional>
 #include <ranges>
 #include <nlohmann/json.hpp>
 
@@ -7,6 +9,9 @@ namespace ignacionr
     class sheet
     {
     public:
+        using loader_t = std::function<nlohmann::json()>;
+        using saver_t = std::function<void(int,int,nlohmann:json)>;
+
         sheet(loader_t loader, saver_t saver) : loader_{loader}, saver_{saver} {}
         void load()
         {
