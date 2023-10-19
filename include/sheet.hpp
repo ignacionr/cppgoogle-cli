@@ -5,7 +5,6 @@
 
 namespace ignacionr
 {
-    template <typename loader_t, typename saver_t>
     class sheet
     {
     public:
