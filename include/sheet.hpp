@@ -1,6 +1,5 @@
 #pragma once
 #include <functional>
-#include <ranges>
 #include <nlohmann/json.hpp>
 
 namespace ignacionr
@@ -65,18 +64,15 @@ namespace ignacionr
             rectangle rect{-1, -1, -1, -1};
 
             int max_height = std::max(values_.size(), baseline_.size());
-            auto max_width_of = [](auto const &table) -> int
-            {
-                auto transformed_table = table |
-                                         std::views::transform(
-                                             [](const auto &row)
-                                             {
-                                                 return row.is_array() ? row.size() : 0;
-                                             });
-                auto max_iter = std::ranges::max_element(transformed_table);
-                return (max_iter != transformed_table.end()) ? *max_iter : 0;
+            auto max_width_of = [](const auto& table) -> int {
+                int max_width = 0;
+                for (const auto& row : table) {
+                    if (row.size() > max_width) {
+                        max_width = row.size();
+                    }
+                }
+                return max_width;
             };
-
             int max_width = std::max(max_width_of(values_), max_width_of(baseline_));
 
             for (int row = 0; row < max_height; ++row)
