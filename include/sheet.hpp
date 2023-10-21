@@ -50,7 +50,8 @@ namespace ignacionr
                         {
                             for (int col = min_col; col <= max_col; ++col)
                             {
-                                r[col - min_col] = source[row][col];
+                                if (source[row].size() > col)
+                                    r[col - min_col] = source[row][col];
                             }
                         }
                         result[row - min_row] = r;
