@@ -6,7 +6,7 @@ int main() {
     ignacionr::google::auth authClient(json, {ignacionr::google::sheets::scope});
     
     ignacionr::google::sheets sheets{authClient};
-    auto result = sheets.load_sheet("<your sheet id>", "Sheet1");
+    auto result = sheets.load_sheet("<your sheet id>", "Test234");
     std::cout << result.values() << std::endl;
     result.values()[5][0] = "this is 5,0";
     result.save();

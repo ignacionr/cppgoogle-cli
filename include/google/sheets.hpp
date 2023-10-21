@@ -22,7 +22,12 @@ namespace ignacionr::google
             sheet result{[this, sheetId, tab_name]() -> nlohmann::json
                          {
                              auto result = FetchData(sheetId, tab_name);
-                             return result["values"];
+                             auto &r = result["values"];
+                             if (!r.is_array())
+                             {
+                                 r = json::array();
+                             }
+                             return r;
                          },
                          [this, sheetId, tab_name](int row, int col, nlohmann::json const &values)
                          {
@@ -57,11 +62,17 @@ namespace ignacionr::google
             if (response.status_code == 200)
             {
                 auto j = json::parse(response.text);
-                return j; // Parse and return as needed
+                return j;
+            }
+            else if (response.status_code == 400)
+            {
+                // try to create a new sheet in the same workbook
+                AddNewSheetToExistingSpreadsheet(sheetId, range);
+                return json::object({{"values", json::array()}});
             }
             else
             {
-                throw std::runtime_error("Could not fetch.");
+                throw std::runtime_error("Could not fetch. Code: " + std::to_string(response.status_code) + ". " + response.error.message);
             }
         }
 
@@ -87,15 +98,18 @@ namespace ignacionr::google
             }
         }
 
-        void AddNewSheetToExistingSpreadsheet(const std::string &spreadsheetId, const std::string &sheetTitle, std::function<void(int)> doWithTabId)
+        void AddNewSheetToExistingSpreadsheet(
+            const std::string &spreadsheetId, const std::string &sheetTitle, std::function<void(int)> doWithTabId = [](int) {})
         {
             // Create JSON payload
             json sheetData{
                 {"requests", {{{"addSheet", {{"properties", {{"title", sheetTitle}}}}}}}}};
 
             std::string url = baseUrl + spreadsheetId + ":batchUpdate";
-            cpr::Header headers{{"Authorization", "Bearer " + oauth_.token()}};
-            auto response = cpr::Post(cpr::Url{url}, cpr::Body{sheetData.dump()}, headers, cpr::Header{{"Content-Type", "application/json"}});
+            cpr::Header headers{
+                {"Authorization", "Bearer " + oauth_.token()},
+                {"Content-Type", "application/json"}};
+            auto response = cpr::Post(cpr::Url{url}, cpr::Body{sheetData.dump()}, headers);
 
             if (response.status_code == 200)
             {
@@ -106,6 +120,9 @@ namespace ignacionr::google
             else
             {
                 std::cerr << "Failed to add new sheet to existing spreadsheet. Error: " << response.status_code << std::endl;
+                std::cerr << "spreadsheetId was " << spreadsheetId << std::endl;
+                std::cerr << "sheetTitle was " << sheetTitle << std::endl;
+                std::cerr << response.text << std::endl;
             }
         }
 
@@ -114,8 +131,7 @@ namespace ignacionr::google
             std::string url = baseUrl + sheetId + "/values/" + range + "?valueInputOption=RAW";
             cpr::Header headers{
                 {"Authorization", "Bearer " + oauth_.token()},
-                {"Content-Type", "application/json"}
-                };
+                {"Content-Type", "application/json"}};
 
             json body{{"values", values}};
             auto response = cpr::Put(cpr::Url{url}, cpr::Body{body.dump()}, headers);
